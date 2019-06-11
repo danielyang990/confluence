@@ -1,0 +1,64 @@
+version: "3.5"
+
+services:
+
+  # 负载均衡器，作为ssl终止  https://docs.traefik.io/configuration/acme/
+  traefik:
+    container_name: traefik
+    image: traefik
+    restart: always
+    command: --api
+    ports:
+      - "80:80" # The HTTP port
+      # - "443:443" # The HTTPS port
+#      - "8080:8080" # The web UI
+    volumes:
+    - /var/run/docker.sock:/var/run/docker.sock
+    labels:
+      traefik.backend: "traefik"
+      traefik.port: 8080
+      traefik.frontend.rule: "Host:traefik.wpay11.com"
+      traefik.frontend.auth.basic: "admin:$$apr1$$0iw6Ujpx$$mDSc.tXpq.cUJM20hTeJZ0"
+
+  confluence:
+    container_name: confluence
+    image: cptactionhank/atlassian-confluence:latest
+    user: root
+    ports: 
+      - 8090:8090
+    volumes: 
+      - /data/confluence:/var/lib/mysql
+      - $PWD/conf/hack:/opt/hack
+    links: 
+      - mysql
+    depends_on:
+      - mysql      
+    labels:
+    - "traefik.enable=true"
+    - "traefik.port=8090"
+    - "traefik.backend=confluence"
+    - "traefik.frontend.rule=Host:confluence.wpay11.com"
+    - "traefik.passHostHeader=true"
+
+  mysql:
+    container_name: mysql
+    image: mysql:5.7
+    user: mysql
+    restart: always
+    command: --default-authentication-plugin=mysql_native_password
+    ports:
+    - "3306:3306"
+    volumes:
+    - $PWD/conf/mysql/custom.cnf:/etc/mysql/conf.d/custom.cnf
+    - $PWD/conf/mysql/initdb.d:/docker-entrypoint-initdb.d
+    - /data/mysql:/var/lib/mysql:rw
+    environment:
+      MYSQL_ROOT_PASSWORD: qwe123456
+      MYSQL_DATABASE: confluence
+      MYSQL_USER: user
+      MYSQL_PASSWORD: qwe123456
+
+networks:
+  default:
+    name: base-network
+    driver: bridge

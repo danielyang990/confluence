@@ -1,0 +1,11 @@
+[mysqld]
+init_connect='SET collation_connection = utf8_unicode_ci'
+init_connect='SET NAMES utf8'
+character-set-server=utf8
+collation-server=utf8_bin
+skip-character-set-client-handshake
+transaction-isolation=READ-COMMITTED
+binlog_format=row
+default-storage-engine=INNODB
+innodb_log_file_size = 2GB
+max_allowed_packet = 256M
